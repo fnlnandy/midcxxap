@@ -125,12 +125,15 @@ std::string MidCxxAP::ArgumentParser::tryToSplitArg(const std::string &s, bool r
 {
     std::string::size_type idx = s.rfind('=');
 
+    // If '=' is not found, or otherwise if it's the last character.
     if ((idx == std::string::npos || idx == s.length() - 1) && returnArg)
     {
         return {};
     }
     if (returnArg)
     {
+        // Since idx contains the index of the '=',
+        // and we're supposed to return the arg.
         return s.substr(idx + 1);
     }
 
