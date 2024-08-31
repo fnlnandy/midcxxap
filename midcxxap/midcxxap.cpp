@@ -45,6 +45,7 @@ MidCxxAP::ArgumentParser::ArgumentParser(const std::string &progName, const std:
 MidCxxAP::Argument &MidCxxAP::ArgumentParser::addArgument(const std::string &posArgName)
 {
     m_posArgs.emplace_back(posArgName);
+    m_posArgsString += posArgName + " ";
 
     return m_posArgs.back();
 }
@@ -52,6 +53,7 @@ MidCxxAP::Argument &MidCxxAP::ArgumentParser::addArgument(const std::string &pos
 MidCxxAP::Argument &MidCxxAP::ArgumentParser::addArgument(const std::string &shortArg, const std::string &longArg, const bool isRequired)
 {
     m_stdArgs.emplace_back(shortArg, longArg, isRequired);
+    m_stdArgsString += shortArg + "/" + longArg + " ";
 
     return m_stdArgs.back();
 }
@@ -61,7 +63,7 @@ std::unordered_map<std::string, std::string> &MidCxxAP ::ArgumentParser::parseAr
     std::vector<std::string> rawArgs = {argv, argv + argc};
     uint posId = {0};
     bool parseNextArgument = false;
-    const Argument *parsingArg = nullptr;
+    Argument *parsingArg = nullptr;
 
     for (const std::string &currentArg : rawArgs)
     {
@@ -69,6 +71,7 @@ std::unordered_map<std::string, std::string> &MidCxxAP ::ArgumentParser::parseAr
         {
             std::string argName = parsingArg->getArgName();
 
+            parsingArg->setAbsent(false);
             m_parsedArgs[argName] = currentArg;
             parseNextArgument = false;
         }
@@ -82,16 +85,17 @@ std::unordered_map<std::string, std::string> &MidCxxAP ::ArgumentParser::parseAr
             if (__keyexists(m_parsedArgs, argName))
                 __warning("duplicate argument name found for: \"" + currentArg + "\".");
 
+            m_posArgs.at(posId).setAbsent(false);
             m_parsedArgs[argName] = currentArg;
             posId++;
         }
         else if (__startswith(currentArg, "--"))
         {
-            tryToParseNonPositional(m_parsedArgs, currentArg, parseNextArgument, &parsingArg, false);
+            tryToParseNonPositional(currentArg, parseNextArgument, &parsingArg, false);
         }
         else if (__startswith(currentArg, "-"))
         {
-            tryToParseNonPositional(m_parsedArgs, currentArg, parseNextArgument, &parsingArg, true);
+            tryToParseNonPositional(currentArg, parseNextArgument, &parsingArg, true);
         }
         else
         {
@@ -99,12 +103,13 @@ std::unordered_map<std::string, std::string> &MidCxxAP ::ArgumentParser::parseAr
         }
     }
 
+    tryToPrintUsage();
     return m_parsedArgs;
 }
 
-const MidCxxAP::Argument *MidCxxAP::ArgumentParser::findMatchingArg(const std::string &s, bool isShort) const
+MidCxxAP::Argument *MidCxxAP::ArgumentParser::findMatchingArg(const std::string &s, bool isShort)
 {
-    for (const Argument &arg : m_stdArgs)
+    for (Argument &arg : m_stdArgs)
     {
         if (isShort)
         {
@@ -140,9 +145,9 @@ std::string MidCxxAP::ArgumentParser::tryToSplitArg(const std::string &s, bool r
     return s.substr(0, idx);
 }
 
-void MidCxxAP::ArgumentParser::tryToParseNonPositional(std::unordered_map<std::string, std::string> &parsedArgs, const std::string &currentArg, bool &parseNextArgument, const MidCxxAP::Argument **parsingArg, bool isShort) const
+void MidCxxAP::ArgumentParser::tryToParseNonPositional(const std::string &currentArg, bool &parseNextArgument, MidCxxAP::Argument **parsingArg, bool isShort)
 {
-    const Argument *foundArg = findMatchingArg(currentArg, isShort);
+    Argument *foundArg = findMatchingArg(currentArg, isShort);
 
     if (foundArg == nullptr)
     {
@@ -152,7 +157,7 @@ void MidCxxAP::ArgumentParser::tryToParseNonPositional(std::unordered_map<std::s
 
     std::string argName = foundArg->getArgName();
 
-    if (__keyexists(parsedArgs, argName))
+    if (__keyexists(m_parsedArgs, argName))
         __warning("duplicate argument name found for: \"" + currentArg + "\".");
 
     std::string argValue = tryToSplitArg(currentArg, true);
@@ -164,5 +169,32 @@ void MidCxxAP::ArgumentParser::tryToParseNonPositional(std::unordered_map<std::s
         return;
     }
 
-    parsedArgs[argName] = argValue;
+    foundArg->setAbsent(false);
+    m_parsedArgs[argName] = argValue;
+}
+
+void MidCxxAP::ArgumentParser::tryToPrintUsage(void) const
+{
+    std::string missingPosArgsString = {};
+    std::string missingStdArgsString = {};
+
+    for (const Argument &arg : m_posArgs)
+        if (arg.getAbsent())
+            missingPosArgsString += arg.getArgName() + " ";
+    for (const Argument &arg : m_stdArgs)
+        if (arg.getAbsent())
+            missingStdArgsString += arg.getShort() + "/" + arg.getLong() + " ";
+
+    if (missingPosArgsString.length() == 0 && missingStdArgsString.length() == 0)
+        return;
+
+    std::printf("%s: \"%s\"\n"
+                "\033[34m\033[1mUsage:\033[0m %s %s%s\n"
+                "\033[31m\033[1mMissing positional arguments:\033[0m %s\n"
+                "\033[31m\033[1mMissing standard arguments:\033[0m %s\n",
+                m_progName.c_str(), m_progDesc.c_str(),
+                m_progName.c_str(), m_posArgsString.c_str(), m_stdArgsString.c_str(),
+                missingPosArgsString.c_str(),
+                missingStdArgsString.c_str());
+    std::exit(1);
 }

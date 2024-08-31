@@ -42,15 +42,22 @@ namespace MidCxxAP
         Argument(const std::string &posArgName);
         Argument(const std::string &shortArg, const std::string &longArg, const bool isRequired = false);
 
+        void setAbsent(const bool isAbsent) { m_isAbsent = isAbsent; }
+
     public:
         std::string getArgName() const;
 
     public:
-        std::string getShort() const { return m_short; };
-        std::string getLong() const { return m_long; };
+        std::string getShort() const { return m_short; }
+        std::string getLong() const { return m_long; }
+        bool getAbsent() const { return m_isAbsent; }
 
     private:
-        bool m_isRequired;
+        union
+        {
+            bool m_isRequired;
+            bool m_isAbsent;
+        };
         bool m_isPositional;
         std::string m_short;
         std::string m_long;
@@ -66,11 +73,12 @@ namespace MidCxxAP
         Argument &addArgument(const std::string &shortArg, const std::string &longArg, const bool isRequired = false);
 
         std::unordered_map<std::string, std::string> &parseArgs(const int argc, char **const argv);
+        Argument *findMatchingArg(const std::string &s, bool isShort);
+        void tryToParseNonPositional(const std::string &currentArg, bool &parseNextArgument, Argument **parsingArg, bool isShort);
 
     public:
-        const Argument *findMatchingArg(const std::string &s, bool isShort) const;
         std::string tryToSplitArg(const std::string &s, bool returnArg = false) const;
-        void tryToParseNonPositional(std::unordered_map<std::string, std::string> &parsedArgs, const std::string &currentArg, bool &parseNextArgument, const Argument **parsingArg, bool isShort) const;
+        void tryToPrintUsage(void) const;
 
     private:
         std::string m_progName;
@@ -78,6 +86,10 @@ namespace MidCxxAP
 
         std::vector<Argument> m_posArgs;
         std::vector<Argument> m_stdArgs;
+
+        std::string m_posArgsString;
+        std::string m_stdArgsString;
+
         std::unordered_map<std::string, std::string> m_parsedArgs;
     };
 }
