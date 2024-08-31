@@ -19,7 +19,7 @@ INCDIR   := midcxxap
 CXXFILES := main.cpp $(wildcard $(INCDIR)/*.cpp)
 OFILES   := $(CXXFILES:%.cpp=%.o)
 
-.PHONY: all clean
+.PHONY: all clean release
 
 all: $(PROG)
 
