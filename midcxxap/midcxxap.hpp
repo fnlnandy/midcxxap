@@ -25,10 +25,14 @@ namespace MidCxxAP
         return false;
     }
 
+#ifndef __MIDCXXAP_WERROR
     inline void __warning(const std::string &text)
     {
         std::printf("\033[34m\033[1mMidCxxAP-warning:\033[0m %s\n", text.c_str());
     }
+#else
+#define __warning __error
+#endif // __MIDCXXAP_WERROR
 
     inline void __error(const std::string &text)
     {
