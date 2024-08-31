@@ -28,4 +28,4 @@ $(PROG): $(OFILES)
 	$(CXX) $(OFILES) -o $@
 
 %.o: %.cpp
-	$(CXX) -c $< -o $@
+	$(CXX) -c $< -o $@ $(CXXFLAGS)
