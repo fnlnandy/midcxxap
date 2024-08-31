@@ -53,7 +53,7 @@ MidCxxAP::Argument &MidCxxAP::ArgumentParser::addArgument(const std::string &pos
 MidCxxAP::Argument &MidCxxAP::ArgumentParser::addArgument(const std::string &shortArg, const std::string &longArg, const bool isRequired)
 {
     m_stdArgs.emplace_back(shortArg, longArg, isRequired);
-    m_stdArgsString += shortArg + "/" + longArg + " ";
+    m_stdArgsString += shortArg + "/" + longArg + " " + longArg.substr(2) + " ";
 
     return m_stdArgs.back();
 }
