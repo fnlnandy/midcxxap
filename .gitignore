@@ -1,3 +1,5 @@
 .vscode
 *.o
 testmidcxxap
+midcxxap.hpp
+!midcxxap/midcxxap.hpp
